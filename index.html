@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <div class="search-box">
+                <i class="fa-solid fa-location-dot"></i>
+                <input type="text" id="city-input" placeholder="Search city..." autocomplete="off" value="Belgrade">
+                <button id="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <div id="suggestions" class="suggestions-list hidden"></div>
+            </div>
+            <button id="settings-btn"><i class="fa-solid fa-gear"></i></button>
+            <div id="settings-dropdown" class="settings-dropdown hidden">
+                <div class="setting-item">
+                    <span>Language</span>
+                    <select id="language-select">
+                        <option value="en">English</option>
+                        <option value="de">Deutsch</option>
+                        <option value="sr">Srpski</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <span>Theme</span>
+                    <button id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+                </div>
+                <div class="setting-item">
+                    <span id="unit-label">Unit</span>
+                    <select id="unit-select">
+                        <option value="c">Celsius (°C)</option>
+                        <option value="f">Fahrenheit (°F)</option>
+                        <option value="k">Kelvin (K)</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <div id="warnings-container" class="warnings-container hidden">
+            <!-- Warnings injected here -->
+        </div>
+
+        <main id="weather-display" class="hidden">
+            <div class="current-weather">
+                <div class="weather-icon-container">
+                    <img id="weather-icon" src="" alt="Weather Icon">
+                </div>
+                <div class="temp-container">
+                    <h1 id="temperature">--</h1><span class="unit">°C</span>
+                </div>
+                <p id="description">--</p>
+                <div class="high-low">
+                    <span>H: <span id="temp-max">--</span>°</span>
+                    <span>L: <span id="temp-min">--</span>°</span>
+                </div>
+            </div>
+
+            <div class="details-grid">
+                <!-- UV Index -->
+                <div class="detail-card">
+                    <div class="detail-icon"><i class="fa-solid fa-sunrise"></i></div>
+                    <div class="detail-info">
+                        <span class="label">UV Index</span>
+                        <span class="value" id="uv-index">--</span>
+                        <span class="sub-text" id="uv-text">Low</span>
+                    </div>
+                </div>
+
+                <!-- Wind & Compass -->
+                <div class="detail-card">
+                    <div class="detail-icon__compass">
+                        <div id="wind-compass" class="compass-arrow"><i class="fa-solid fa-location-arrow"></i></div>
+                    </div>
+                    <div class="detail-info">
+                        <span class="label">Wind</span>
+                        <span class="value" id="wind-speed-detail">--</span>
+                        <span class="sub-text" id="wind-dir-text">--</span>
+                    </div>
+                </div>
+
+                <!-- Humidity -->
+                <div class="detail-card">
+                    <div class="detail-icon"><i class="fa-solid fa-droplet"></i></div>
+                    <div class="detail-info">
+                        <span class="label">Humidity</span>
+                        <span class="value" id="humidity">--%</span>
+                        <span class="sub-text">Dew Point: --°</span>
+                    </div>
+                </div>
+
+                <!-- Pressure -->
+                <div class="detail-card">
+                    <div class="detail-icon"><i class="fa-solid fa-gauge"></i></div>
+                    <div class="detail-info">
+                        <span class="label">Pressure</span>
+                        <span class="value" id="pressure">--</span>
+                        <span class="sub-text">hPa</span>
+                    </div>
+                </div>
+
+                <!-- Air Quality -->
+                <div class="detail-card">
+                    <div class="detail-icon"><i class="fa-solid fa-lungs"></i></div>
+                    <div class="detail-info">
+                        <span class="label">Air Quality</span>
+                        <span class="value" id="aqi">--</span>
+                        <span class="sub-text" id="aqi-text">Good</span>
+                    </div>
+                </div>
+
+                <!-- Moon Phase -->
+                <div class="detail-card">
+                    <div class="detail-icon" id="moon-icon-wrapper"><i class="fa-solid fa-moon"></i></div>
+                    <div class="detail-info">
+                        <span class="label">Moon Phase</span>
+                        <span class="value" id="moon-phase">--</span>
+                        <span class="sub-text" id="moon-illumination">--% Illum</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="astro-container">
+                <div class="astro-item">
+                    <i class="fa-solid fa-sunrise"></i> <!-- Using generic sun if sunrise icon fails -->
+                    <span>Sunrise</span>
+                    <span id="sunrise-time">--:--</span>
+                </div>
+                <div class="astro-item">
+                    <i class="fa-solid fa-sunset"></i>
+                    <span>Sunset</span>
+                    <span id="sunset-time">--:--</span>
+                </div>
+                <div class="astro-item">
+                    <i class="fa-solid fa-moon"></i>
+                    <span>Moonset</span>
+                    <span id="moonset-time">--:--</span>
+                </div>
+            </div>
+            <!-- Future: Forecast section -->
+            <div id="forecast-container" class="forecast-container">
+                <!-- Forecast items will be injected here -->
+            </div>
+
+        </main>
+
+        <div id="loading" class="hidden">
+            <div class="spinner"></div>
+        </div>
+
+        <div id="error-message" class="hidden">
+            <p>City not found. Please try again.</p>
+        </div>
+        <div id="news-section" class="news-section">
+            <h3 id="news-title">Local News</h3>
+            <div id="news-container" class="news-grid"></div>
+        </div>
+    </div>
+
+    <script src="script.js" type="module"></script>
+</body>
+
+</html>
