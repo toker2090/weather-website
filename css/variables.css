@@ -1,0 +1,19 @@
+:root {
+    --bg-morning: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+    --bg-noon: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --bg-afternoon: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --bg-night: linear-gradient(135deg, #1a1c29 0%, #0f0c29 100%);
+    --bg-midnight: linear-gradient(135deg, #090909 0%, #2c3e50 100%);
+
+    --primary-gradient: var(--bg-night);
+    /* Liquid Glass theme */
+    --glass-bg: rgba(20, 20, 30, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-blur: blur(20px);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --font-main: 'Outfit', sans-serif;
+    --warning-bg: rgba(255, 71, 87, 0.2);
+    --warning-border: rgba(255, 71, 87, 0.5);
+    --gold: #ffd700;
+}

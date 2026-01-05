@@ -56,6 +56,7 @@
                     <h1 id="temperature">--</h1><span class="unit">°C</span>
                 </div>
                 <p id="description">--</p>
+                <h2 id="city-display" class="city-name">--</h2>
                 <div class="high-low">
                     <span>H: <span id="temp-max">--</span>°</span>
                     <span>L: <span id="temp-min">--</span>°</span>
@@ -129,14 +130,19 @@
 
             <div class="astro-container">
                 <div class="astro-item">
-                    <i class="fa-solid fa-sunrise"></i> <!-- Using generic sun if sunrise icon fails -->
+                    <i class="fa-solid fa-arrow-up"></i>
                     <span>Sunrise</span>
                     <span id="sunrise-time">--:--</span>
                 </div>
                 <div class="astro-item">
-                    <i class="fa-solid fa-cloud-sun"></i>
+                    <i class="fa-solid fa-arrow-down"></i>
                     <span>Sunset</span>
                     <span id="sunset-time">--:--</span>
+                </div>
+                <div class="astro-item">
+                    <i class="fa-solid fa-moon"></i>
+                    <span>Moonset</span>
+                    <span id="moonset-time">--:--</span>
                 </div>
             </div>
             <!-- Future: Forecast section -->
@@ -156,6 +162,32 @@
         <div id="news-section" class="news-section">
             <h3 id="news-title">Local News</h3>
             <div id="news-container" class="news-grid"></div>
+        </div>
+
+    </div>
+
+    <!-- Chat AI Section - Moved outside app-container for fixed positioning -->
+    <div id="chat-container">
+        <button id="chat-fab" class="chat-fab">
+            <i class="fa-solid fa-message"></i>
+        </button>
+        <div id="chat-window" class="chat-window hidden">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <i class="fa-solid fa-robot"></i>
+                    <span>AI Assistant</span>
+                </div>
+                <button id="close-chat" class="icon-btn-small"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="chat-messages" class="chat-messages">
+                <div class="message ai-message">
+                    <div class="message-content">Hello! I'm your AI weather assistant. Ask me anything!</div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Ask about the weather..." autocomplete="off">
+                <button id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
         </div>
     </div>
 
