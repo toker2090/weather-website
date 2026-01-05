@@ -30,7 +30,6 @@ const moonIconWrapper = document.getElementById('moon-icon-wrapper');
 // Astro
 const sunriseElement = document.getElementById('sunrise-time');
 const sunsetElement = document.getElementById('sunset-time');
-const moonsetElement = document.getElementById('moonset-time');
 
 const forecastContainer = document.getElementById('forecast-container');
 
@@ -99,23 +98,54 @@ function getIconUrl(code) {
     return `https://openweathermap.org/img/wn/${iconCode}@4x.png`;
 }
 
+// Improved Icon Logic with Night Mode
+function getIconUrlV2(code, isDay) {
+    // OpenWeatherMap mapping: d = day, n = night
+    const suffix = isDay ? 'd' : 'n';
+
+    let iconCode = '01';
+    if (code === 0) iconCode = '01'; // Clear
+    else if (code <= 3) iconCode = '02'; // Cloudy
+    else if (code === 45 || code === 48) iconCode = '50'; // Fog
+    else if (code >= 51 && code <= 67) iconCode = '10'; // Rain
+    else if (code >= 71 && code <= 77) iconCode = '13'; // Snow
+    else if (code >= 80 && code <= 82) iconCode = '09'; // Showers
+    else if (code >= 95 && code <= 99) iconCode = '11'; // Thunderstorm
+
+    return `https://openweathermap.org/img/wn/${iconCode}${suffix}@4x.png`;
+}
+
 const suggestionsList = document.getElementById('suggestions');
 const settingsBtn = document.getElementById('settings-btn');
 const settingsDropdown = document.getElementById('settings-dropdown');
-const themeToggle = document.getElementById('theme-toggle');
 const languageSelect = document.getElementById('language-select');
 
 let debounceTimer;
 
 // State
 let currentLang = localStorage.getItem('weather_lang') || 'en';
-let currentTheme = localStorage.getItem('weather_theme') || 'dark';
+// Theme is now permanently dark (default), so we can ignore theme loading or force it if needed.
+// let currentTheme = 'dark'; // functionality removed
 let currentUnit = localStorage.getItem('weather_unit') || 'c';
 
-// Cached Data for instant unit conversion
+// Cache for weather data
 let lastWeatherData = null;
 let lastAQIData = null;
-let lastCityName = "";
+let lastCityName = '';
+
+// ... (Rest of variables)
+
+// Event Listeners
+settingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settingsDropdown.classList.toggle('hidden');
+});
+
+document.addEventListener('click', (e) => {
+    if (!settingsDropdown.contains(e.target) && e.target !== settingsBtn && !settingsBtn.contains(e.target)) {
+        settingsDropdown.classList.add('hidden');
+    }
+});
 
 // Translations
 const translations = {
@@ -128,6 +158,7 @@ const translations = {
         pressure: "Pressure",
         aqi: "Air Quality",
         moonPhase: "Moon Phase",
+        dewPoint: "Dew Point",
         illum: "Illum",
         sunrise: "Sunrise",
         sunset: "Sunset",
@@ -168,6 +199,7 @@ const translations = {
         pressure: "Druck",
         aqi: "Luftqualität",
         moonPhase: "Mondphase",
+        dewPoint: "Taupunkt",
         illum: "Illum",
         sunrise: "Sonnenaufgang",
         sunset: "Sonnenuntergang",
@@ -208,6 +240,7 @@ const translations = {
         pressure: "Pritisak",
         aqi: "Kvalitet vazduha",
         moonPhase: "Mesečeva faza",
+        dewPoint: "Tačka rose",
         illum: "Osvet.",
         sunrise: "Izlazak sunca",
         sunset: "Zalazak sunca",
@@ -242,26 +275,6 @@ const translations = {
 };
 const unitSelect = document.getElementById('unit-select');
 
-// Event Listeners
-settingsBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    settingsDropdown.classList.toggle('hidden');
-});
-
-document.addEventListener('click', (e) => {
-    if (!settingsDropdown.contains(e.target) && e.target !== settingsBtn && !settingsBtn.contains(e.target)) {
-        settingsDropdown.classList.add('hidden');
-    }
-});
-
-themeToggle.addEventListener('click', () => {
-    document.body.classList.toggle('light-theme');
-    const isLight = document.body.classList.contains('light-theme');
-    currentTheme = isLight ? 'light' : 'dark';
-    localStorage.setItem('weather_theme', currentTheme);
-    themeToggle.innerHTML = isLight ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
-});
-
 languageSelect.addEventListener('change', (e) => {
     currentLang = e.target.value;
     localStorage.setItem('weather_lang', currentLang);
@@ -291,7 +304,6 @@ function updateStaticText() {
     // Update labels and static texts
     document.getElementById('unit-label').textContent = t.unit;
     languageSelect.previousElementSibling.textContent = t.lang;
-    themeToggle.previousElementSibling.textContent = t.theme;
 
     // Update labels in the grid
     document.querySelector('#uv-index').previousElementSibling.textContent = t.uv;
@@ -300,6 +312,9 @@ function updateStaticText() {
     document.querySelector('#pressure').previousElementSibling.textContent = t.pressure;
     document.querySelector('#aqi').previousElementSibling.textContent = t.aqi;
     document.querySelector('#moon-phase').previousElementSibling.textContent = t.moonPhase;
+
+    const dewLabel = document.getElementById('dew-point-label');
+    if (dewLabel) dewLabel.textContent = t.dewPoint;
 
     // Astro
     const astroLabels = document.querySelectorAll('.astro-item span:nth-of-type(1)');
@@ -422,8 +437,12 @@ async function fetchWeatherData(latitude, longitude, name, countryCode) {
     showLoading();
     try {
         // 2. Weather Data (10 Days, Daily & Hourly Details)
-        const weatherUrl = `${WEATHER_API}?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,weathercode,windgusts_10m,relativehumidity_2m,surface_pressure,winddirection_10m&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=auto&forecast_days=10&language=${currentLang}`;
+        // Re-added dewpoint_2m which was missing
+        const weatherUrl = `${WEATHER_API}?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,weathercode,windgusts_10m,relativehumidity_2m,dewpoint_2m,surface_pressure,winddirection_10m&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=auto&forecast_days=9`;
+        console.log('Fetching Weather:', weatherUrl);
+
         const weatherRes = await fetch(weatherUrl);
+        if (!weatherRes.ok) throw new Error(`Weather API Error: ${weatherRes.status}`);
         const weatherData = await weatherRes.json();
 
         // 3. Air Quality Data
@@ -439,9 +458,10 @@ async function fetchWeatherData(latitude, longitude, name, countryCode) {
         updateUI(weatherData, aqiData, name);
         updateForecast(weatherData.hourly);
         loadNews(countryCode);
+        triggerWeatherAnimation(weatherData.current_weather.weathercode);
     } catch (error) {
-        console.error(error);
-        showError();
+        console.error('Fetch Weather Failed:', error);
+        showError(`Error: ${error.message}`);
     }
 }
 
@@ -463,9 +483,11 @@ function updateUI(weatherData, aqiData, cityName) {
     tempMinElement.textContent = convertTemp(daily.temperature_2m_min[0]);
 
     const code = current.weathercode;
-    const weatherInfo = weatherCodes[code] || { icon: 'Unknown' };
+    const isDay = current.is_day !== 0; // 1 is day, 0 is night
     descElement.textContent = translations[currentLang].weatherDesc[code] || 'Unknown';
-    iconElement.src = getIconUrl(code);
+    // Use Font Awesome Class
+    iconElement.className = getWeatherIconClass(code, isDay);
+    iconElement.removeAttribute('src'); // Ensure no broken image icon
 
     // --- Details Grid ---
 
@@ -489,6 +511,13 @@ function updateUI(weatherData, aqiData, cityName) {
     if (hourIndex === -1) hourIndex = 0; // Fallback
 
     humidityElement.textContent = `${hourly.relativehumidity_2m[hourIndex]}%`;
+    // Update Dew Point
+    const dewPointVal = hourly.dewpoint_2m ? hourly.dewpoint_2m[hourIndex] : 'N/A';
+    const dewPointEl = document.getElementById('dew-point-value');
+    if (dewPointEl) {
+        dewPointEl.textContent = typeof dewPointVal === 'number' ? `${Math.round(dewPointVal)}°` : dewPointVal;
+    }
+
     pressureElement.textContent = Math.round(hourly.surface_pressure[hourIndex]);
 
     // Air Quality
@@ -505,7 +534,6 @@ function updateUI(weatherData, aqiData, cityName) {
     // --- Astro Section ---
     sunriseElement.textContent = formatTime(daily.sunrise[0]);
     sunsetElement.textContent = formatTime(daily.sunset[0]);
-    moonsetElement.textContent = daily.moonset && daily.moonset[0] ? formatTime(daily.moonset[0]) : '--:--';
 
     // --- Warnings ---
     const alerts = generateWarnings(current, daily, hourly, hourIndex);
@@ -515,6 +543,7 @@ function updateUI(weatherData, aqiData, cityName) {
 function updateForecast(hourlyData) {
     forecastContainer.innerHTML = '';
 
+    // Extract hourly data (is_day removed for stability, will infer or custom logic)
     const { time, temperature_2m, weathercode, windgusts_10m } = hourlyData;
 
     // Group by day
@@ -528,11 +557,18 @@ function updateForecast(hourlyData) {
             days[dayKey] = [];
         }
 
+        // Simple day/night inference based on hour (6am to 9pm is "day" roughly for icons)
+        // A better way is using sunrise/sunset from daily, but that's complex to map to hourly index here quickly.
+        // Let's use hour check:
+        const h = date.getHours();
+        const simplifiedIsDay = h >= 6 && h < 21;
+
         days[dayKey].push({
             time: date.toLocaleTimeString(currentLang === 'sr' ? 'sr-RS' : (currentLang === 'de' ? 'de-DE' : 'en-US'), { hour: 'numeric', hour12: currentLang === 'en' }),
             temp: temperature_2m[index],
             code: weathercode[index],
-            gusts: windgusts_10m[index]
+            gusts: windgusts_10m[index],
+            isDay: simplifiedIsDay
         });
     });
 
@@ -542,11 +578,8 @@ function updateForecast(hourlyData) {
 
         const dayGroup = document.createElement('div');
         dayGroup.className = 'day-group';
+        // Add Glassy Dark style explicitly if needed, but CSS handles it
 
-        const title = document.createElement('h3');
-        title.className = 'day-title';
-        title.textContent = dayName;
-        dayGroup.appendChild(title);
 
         const scrollContainer = document.createElement('div');
         scrollContainer.className = 'hourly-scroll';
@@ -555,9 +588,12 @@ function updateForecast(hourlyData) {
             const card = document.createElement('div');
             card.className = 'forecast-card';
 
+            // Use get WeatherIconClass for font awesome icons
+            const iconClass = getWeatherIconClass(hour.code, hour.isDay);
+
             card.innerHTML = `
                 <span class="forecast-time">${hour.time}</span>
-                <img class="forecast-icon" src="${getIconUrl(hour.code)}" alt="Icon">
+                <i class="forecast-icon ${iconClass}" style="font-size: 1.5rem; margin: 5px 0;"></i>
                 <span class="forecast-temp">${convertTemp(hour.temp)}°</span>
                 <span class="forecast-gusts"><i class="fa-solid fa-wind"></i> ${Math.round(hour.gusts)}</span>
             `;
@@ -577,13 +613,16 @@ function showLoading() {
     errorMessage.classList.add('hidden');
 }
 
-function showError() {
+function showError(msg) {
     loading.classList.add('hidden');
     weatherDisplay.classList.add('hidden');
     errorMessage.classList.remove('hidden');
+    // If msg provided, update text, otherwise default to translation
+    const p = errorMessage.querySelector('p');
+    if (msg) p.textContent = msg;
+    else p.textContent = translations[currentLang].error;
 }
 
-// --- News ---
 async function loadNews(countryCode) {
     const container = document.getElementById('news-container');
     const title = document.getElementById('news-title');
@@ -631,6 +670,70 @@ async function loadNews(countryCode) {
         container.innerHTML = `<p>${t.networkError}</p>`;
         console.error(err);
     }
+}
+
+// --- Dynamic Themes & Animations ---
+
+function updateTimeTheme() {
+    const hour = new Date().getHours();
+    const body = document.body;
+
+    // Remove old themes
+    body.classList.remove('theme-morning', 'theme-noon', 'theme-afternoon', 'theme-night', 'theme-midnight');
+
+    if (hour >= 5 && hour < 11) body.classList.add('theme-morning');
+    else if (hour >= 11 && hour < 16) body.classList.add('theme-noon');
+    else if (hour >= 16 && hour < 20) body.classList.add('theme-afternoon');
+    else if (hour >= 20 || hour < 5) {
+        if (hour >= 23 || hour < 3) body.classList.add('theme-midnight');
+        else body.classList.add('theme-night');
+    }
+}
+
+function triggerWeatherAnimation(code) {
+    const container = document.getElementById('weather-animations');
+    container.innerHTML = ''; // Clear old animations
+
+    // Weather grouping
+    const isRain = (code >= 51 && code <= 67) || (code >= 80 && code <= 82);
+    const isSnow = (code >= 71 && code <= 77) || (code >= 85 && code <= 86);
+    const isHail = (code === 77 || code >= 96);
+    const isThunder = (code >= 95);
+
+    if (isRain) createParticles('rain-drop', 80);
+    if (isSnow) createParticles('snowflake', 50);
+    if (isHail) createParticles('hail-drop', 40);
+    if (isThunder) startLightning();
+}
+
+function createParticles(className, count) {
+    const container = document.getElementById('weather-animations');
+    for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = className;
+        particle.style.left = Math.random() * 100 + 'vw';
+        particle.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+        particle.style.animationDelay = Math.random() * 2 + 's';
+        if (className === 'snowflake') {
+            const size = Math.random() * 5 + 2 + 'px';
+            particle.style.width = size;
+            particle.style.height = size;
+        }
+        container.appendChild(particle);
+    }
+}
+
+function startLightning() {
+    const overlay = document.createElement('div');
+    overlay.className = 'lightning-flash';
+    document.body.appendChild(overlay);
+
+    setInterval(() => {
+        if (Math.random() > 0.95) {
+            overlay.classList.add('flash-active');
+            setTimeout(() => overlay.classList.remove('flash-active'), 500);
+        }
+    }, 1000);
 }
 
 // --- Helpers ---
@@ -765,30 +868,161 @@ function renderWarnings(alerts) {
 }
 
 // --- IP Geolocation ---
-async function initAutoLocation() {
-    try {
-        const response = await fetch('https://ipapi.co/json/');
-        const data = await response.json();
+// Font Awesome Icon Map
+function getWeatherIconClass(code, isDay) {
+    // 0: Clear
+    // 1,2,3: Clouds
+    // 45,48: Fog
+    // 51-67: Rain/Drizzle
+    // 71-77, 85-86: Snow
+    // 80-82: Showers
+    // 95-99: Thunderstuff
 
-        if (data.city) {
-            cityInput.value = data.city;
-            fetchWeatherData(data.latitude, data.longitude, data.city, data.country_code);
+    const timeMod = isDay ? 'fa-sun' : 'fa-moon';
+    const cloudMod = isDay ? 'fa-cloud-sun' : 'fa-cloud-moon';
+    const rainMod = isDay ? 'fa-cloud-sun-rain' : 'fa-cloud-moon-rain';
+
+    if (code === 0) return `fa-solid ${timeMod}`;
+    if (code === 1) return `fa-solid ${cloudMod}`;
+    if (code === 2) return `fa-solid ${cloudMod}`;
+    if (code === 3) return `fa-solid fa-cloud`;
+    if (code === 45 || code === 48) return `fa-solid fa-smog`;
+    if (code >= 51 && code <= 67) return `fa-solid fa-cloud-rain`; // Drizzle/Rain
+    if (code >= 71 && code <= 77) return `fa-solid fa-snowflake`;
+    if (code >= 80 && code <= 82) return `fa-solid fa-cloud-showers-heavy`;
+    if (code >= 85 && code <= 86) return `fa-solid fa-snowflake`;
+    if (code >= 95) return `fa-solid fa-bolt`;
+
+    return `fa-solid ${timeMod}`; // Fallback
+}
+
+// --- Auto Location with Browser Geolocation API ---
+async function initAutoLocation() {
+    console.log('🌍 Starting auto-location...');
+
+    // Try browser's native geolocation first (most accurate)
+    if (navigator.geolocation) {
+        console.log('📍 Trying browser geolocation...');
+
+        navigator.geolocation.getCurrentPosition(
+            // Success callback
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                console.log(`✅ Got coordinates: ${lat}, ${lon}`);
+
+                // Reverse geocode to get city name
+                try {
+                    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?latitude=${lat}&longitude=${lon}&count=1&language=en&format=json`;
+                    const response = await fetch(geoUrl);
+                    const data = await response.json();
+
+                    if (data.results && data.results[0]) {
+                        const city = data.results[0].name;
+                        const country = data.results[0].country_code;
+                        console.log(`✅ Detected city: ${city}, ${country}`);
+
+                        // Set language based on country
+                        if (country === 'RS') currentLang = 'sr';
+                        else if (country === 'DE') currentLang = 'de';
+
+                        localStorage.setItem('weather_lang', currentLang);
+                        languageSelect.value = currentLang;
+                        updateStaticText();
+
+                        cityInput.value = city;
+                        console.log(`🌤️ Fetching weather for ${city}...`);
+                        fetchWeatherData(lat, lon, city, country);
+                    } else {
+                        throw new Error('No city found from coordinates');
+                    }
+                } catch (error) {
+                    console.error('❌ Reverse geocoding failed:', error);
+                    fallbackToIPLocation();
+                }
+            },
+            // Error callback
+            (error) => {
+                console.warn('⚠️ Browser geolocation denied or failed:', error.message);
+                fallbackToIPLocation();
+            },
+            // Options
+            { timeout: 10000, enableHighAccuracy: false }
+        );
+    } else {
+        console.warn('⚠️ Browser geolocation not supported');
+        fallbackToIPLocation();
+    }
+}
+
+// Fallback to IP-based geolocation
+async function fallbackToIPLocation() {
+    console.log('🔄 Falling back to IP-based location...');
+
+    const tryProvider = async (url) => {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+    };
+
+    try {
+        let city, country, lat, lon;
+
+        try {
+            console.log('📍 Trying geojs.io...');
+            const data = await tryProvider('https://get.geojs.io/v1/ip/geo.json');
+            console.log('✅ GeoJS Data:', data);
+            city = data.city;
+            country = data.country_code;
+            lat = data.latitude;
+            lon = data.longitude;
+
+            if (!city) {
+                throw new Error('No city from geojs');
+            }
+            console.log(`✅ City detected: ${city}, Country: ${country}`);
+
+        } catch (e1) {
+            console.warn('❌ geojs failed, trying ipapi...', e1);
+            const data = await tryProvider('https://ipapi.co/json/');
+            console.log('✅ IPAPI Data:', data);
+            city = data.city;
+            country = data.country_code;
+            lat = data.latitude;
+            lon = data.longitude;
         }
+
+        if (city && lat && lon) {
+            if (country === 'RS') currentLang = 'sr';
+            else if (country === 'DE') currentLang = 'de';
+
+            localStorage.setItem('weather_lang', currentLang);
+            languageSelect.value = currentLang;
+            updateStaticText();
+
+            cityInput.value = city;
+            console.log(`🌤️ Fetching weather for ${city}...`);
+            fetchWeatherData(lat, lon, city, country);
+        } else {
+            throw new Error("No city found in any provider");
+        }
+
     } catch (error) {
-        console.error('Auto-location failed:', error);
-        // Default to a fallback city if needed, but here we just wait for user input
+        console.error('❌ All location methods failed:', error);
+        const defaultCity = 'Belgrade';
+        console.log(`🔄 Loading default city: ${defaultCity}`);
+        getWeather(defaultCity);
     }
 }
 
 // --- Initialization ---
 function init() {
-    if (currentTheme === 'light') {
-        document.body.classList.add('light-theme');
-        themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
-    }
+    // Theme is now static/time-based, so no toggle logic needed.
+
     languageSelect.value = currentLang;
     unitSelect.value = currentUnit;
     updateStaticText();
+    updateTimeTheme(); // This handles the background gradients
     initAutoLocation();
 }
 

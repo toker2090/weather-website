@@ -13,15 +13,16 @@
 </head>
 
 <body>
+    <div id="weather-animations" class="animations-layer"></div>
     <div class="app-container">
         <header>
             <div class="search-box">
                 <i class="fa-solid fa-location-dot"></i>
-                <input type="text" id="city-input" placeholder="Search city..." autocomplete="off" value="Belgrade">
+                <input type="text" id="city-input" placeholder="Search city..." autocomplete="off">
                 <button id="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
                 <div id="suggestions" class="suggestions-list hidden"></div>
             </div>
-            <button id="settings-btn"><i class="fa-solid fa-gear"></i></button>
+            <button id="settings-btn" class="icon-btn"><i class="fa-solid fa-gear"></i></button>
             <div id="settings-dropdown" class="settings-dropdown hidden">
                 <div class="setting-item">
                     <span>Language</span>
@@ -30,10 +31,6 @@
                         <option value="de">Deutsch</option>
                         <option value="sr">Srpski</option>
                     </select>
-                </div>
-                <div class="setting-item">
-                    <span>Theme</span>
-                    <button id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
                 </div>
                 <div class="setting-item">
                     <span id="unit-label">Unit</span>
@@ -53,7 +50,7 @@
         <main id="weather-display" class="hidden">
             <div class="current-weather">
                 <div class="weather-icon-container">
-                    <img id="weather-icon" src="" alt="Weather Icon">
+                    <i id="weather-icon" class="fa-solid fa-sun"></i>
                 </div>
                 <div class="temp-container">
                     <h1 id="temperature">--</h1><span class="unit">°C</span>
@@ -68,7 +65,7 @@
             <div class="details-grid">
                 <!-- UV Index -->
                 <div class="detail-card">
-                    <div class="detail-icon"><i class="fa-solid fa-sunrise"></i></div>
+                    <div class="detail-icon"><i class="fa-solid fa-sun"></i></div>
                     <div class="detail-info">
                         <span class="label">UV Index</span>
                         <span class="value" id="uv-index">--</span>
@@ -94,7 +91,8 @@
                     <div class="detail-info">
                         <span class="label">Humidity</span>
                         <span class="value" id="humidity">--%</span>
-                        <span class="sub-text">Dew Point: --°</span>
+                        <span class="sub-text"><span id="dew-point-label">Dew Point</span>: <span
+                                id="dew-point-value">--°</span></span>
                     </div>
                 </div>
 
@@ -131,7 +129,7 @@
 
             <div class="astro-container">
                 <div class="astro-item">
-                    <i class="fa-solid fa-sunrise"></i> <!-- Using generic sun if sunrise icon fails -->
+                    <i class="fa-solid fa-sunrise"></i>
                     <span>Sunrise</span>
                     <span id="sunrise-time">--:--</span>
                 </div>
@@ -139,11 +137,6 @@
                     <i class="fa-solid fa-sunset"></i>
                     <span>Sunset</span>
                     <span id="sunset-time">--:--</span>
-                </div>
-                <div class="astro-item">
-                    <i class="fa-solid fa-moon"></i>
-                    <span>Moonset</span>
-                    <span id="moonset-time">--:--</span>
                 </div>
             </div>
             <!-- Future: Forecast section -->
